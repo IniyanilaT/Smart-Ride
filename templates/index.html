@@ -1,0 +1,167 @@
+<!DOCTYPE html>
+<html lang="en"> 
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <title>SmartRide</title>
+
+    <link rel="stylesheet" href="{{url_for('static',filename='style.css')}}">
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
+</head>
+
+<body>
+
+    <!-- Header -->
+    <header>
+        <h1>SmartRide</h1>
+        <p>Smart Vehicle Monitoring System</p>
+    </header>
+
+
+    <!-- Main Container -->
+    <main>
+
+        <!-- Monitoring Section -->
+        <section class="monitoring">''
+
+            <h2>Vehicle Monitoring</h2>
+
+            <button onclick="startMonitoring()">
+                Start Monitoring
+            </button>
+
+        </section>
+
+
+        <!-- Sensor Data -->
+        <section class="dashboard">
+
+            <div class="card">
+                <h3>Speed</h3>
+                <p><span id="speed">0</span> km/h</p>
+            </div>
+
+            <div class="card">
+                <h3>Acceleration</h3>
+                <p><span id="acceleration">0</span> m/s²</p>
+            </div>
+
+            <div class="card">
+                <h3>Tilt</h3>
+                <p><span id="tilt">0</span>°</p>
+            </div>
+
+            <div class="card">
+                <h3>Vibration</h3>
+                <p id="vibration">NORMAL</p>
+            </div>
+
+        </section>
+
+
+        <!-- Ride Status -->
+        <section class="status">
+
+            <h2>Ride Status</h2>
+
+            <p id="rideStatus">
+                Monitoring not started
+            </p>
+
+        </section>
+
+
+        <!-- Emergency Section -->
+        <section class="emergency">
+
+            <h2>Emergency Alert</h2>
+
+            <p id="alert">
+                No emergency detected
+            </p>
+
+        </section>
+        <!-- GPS Map -->
+<section class="map-section">
+
+    <h2>GPS Location</h2>
+
+    <p id="gpsStatus">Getting location...</p>
+
+    <div id="map"></div>
+
+</section>
+<section class="emergency">
+
+    <h2>Emergency Alert</h2>
+
+    <p id="alert">
+        No emergency detected
+    </p>
+
+</section>
+<div class="confirmation-overlay" id="confirmation">
+
+        <div class="confirmation-box">
+
+            <h2>🚨 Accident Detected</h2>
+
+            <p class="question">Are you OK?</p>
+
+            <p id="responseTimer">
+                Please respond within 10 seconds
+            </p>
+
+            <div class="confirmation-buttons">
+
+                <button class="yes-btn" onclick="userOK()">YES</button>
+
+                <button class="no-btn" onclick="userNotOK()">NO</button>
+
+            </div>
+
+            <p id="countdown" style="display: none;"></p>
+
+        </div>
+
+    </div>
+
+    <div class="emergency-overlay" id="emergencyOverlay">
+
+        <div class="emergency-box">
+
+            <h2>🚨 EMERGENCY MODE</h2>
+
+            <p>Accident confirmed</p>
+
+            <p id="emergencyLocation">
+                Getting rider location...
+            </p>
+
+            <p id="emergencyStatus">
+                Sending emergency alert...
+            </p>
+
+        </div>
+
+    </div>
+
+    <section class="map-section">
+
+        <h2>GPS Location</h2>
+
+        <p id="gpsStatus">Getting location...</p>
+
+        <div id="map"></div>
+
+    </section>
+    </main>
+
+
+    <!-- JavaScript -->
+    <script src="{{ url_for('static', filename='script.js') }}"></script>
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+</body>
+
+</html><!DOCTYPE html>
