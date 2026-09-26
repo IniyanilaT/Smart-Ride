@@ -214,16 +214,21 @@ function startEmergencyCountdown() {
 
 async function sendEmergencyLocation() {
 
+    console.log("Emergency location function started");
+
     if (!navigator.geolocation) {
 
         document.getElementById("emergencyStatus").innerText =
-            "GPS is not supported.";
+            "GPS is not supported by this browser.";
 
         return;
     }
 
     document.getElementById("emergencyLocation").innerText =
         "Requesting GPS location...";
+
+    document.getElementById("emergencyStatus").innerText =
+        "Getting rider location...";
 
     navigator.geolocation.getCurrentPosition(
 
@@ -232,7 +237,11 @@ async function sendEmergencyLocation() {
             const latitude = position.coords.latitude;
             const longitude = position.coords.longitude;
 
-            console.log("GPS:", latitude, longitude);
+            console.log(
+                "GPS received:",
+                latitude,
+                longitude
+            );
 
             document.getElementById("emergencyLocation").innerText =
                 "Location: " +
@@ -242,60 +251,98 @@ async function sendEmergencyLocation() {
 
             try {
 
-                const response = await fetch("/emergency-location", {
+                const response = await fetch(
+                    "/emergency-location",
+                    {
+                        method: "POST",
 
-                    method: "POST",
+                        headers: {
+                            "Content-Type": "application/json"
+                        },
 
-                    headers: {
-                        "Content-Type": "application/json"
-                    },
+                        body: JSON.stringify({
+                            latitude: latitude,
+                            longitude: longitude
+                        })
+                    }
+                );
 
-                    body: JSON.stringify({
-                        latitude: latitude,
-                        longitude: longitude
-                    })
-
-                });
+                console.log(
+                    "Backend response status:",
+                    response.status
+                );
 
                 const result = await response.json();
 
-                console.log("Backend:", result);
+                console.log(
+                    "Backend response:",
+                    result
+                );
 
-                document.getElementById("emergencyStatus").innerText =
-                    "📍 Location sent successfully.";
+                if (response.ok) {
+
+                    document.getElementById("emergencyStatus").innerText =
+                        "📍 Emergency location sent successfully.";
+
+                } else {
+
+                    document.getElementById("emergencyStatus").innerText =
+                        "❌ Backend rejected the location.";
+
+                }
 
             } catch (error) {
 
-                console.error("Backend error:", error);
+                console.error(
+                    "Emergency location backend error:",
+                    error
+                );
 
                 document.getElementById("emergencyStatus").innerText =
-                    "Backend connection failed.";
+                    "❌ Could not send location to backend.";
             }
 
         },
 
         function(error) {
 
-            console.error("GPS ERROR:", error);
+            console.error(
+                "GPS ERROR:",
+                error
+            );
 
             if (error.code === 1) {
+
                 document.getElementById("emergencyStatus").innerText =
-                    "GPS permission denied.";
+                    "❌ GPS permission denied. Allow location access.";
+
             }
+
             else if (error.code === 2) {
+
                 document.getElementById("emergencyStatus").innerText =
-                    "GPS location unavailable.";
+                    "❌ GPS location unavailable.";
+
             }
+
             else if (error.code === 3) {
+
                 document.getElementById("emergencyStatus").innerText =
-                    "GPS request timed out.";
+                    "❌ GPS request timed out.";
+
+            }
+
+            else {
+
+                document.getElementById("emergencyStatus").innerText =
+                    "❌ Unable to get GPS location.";
             }
 
         },
 
         {
             enableHighAccuracy: true,
-            timeout: 10000,
+            timeout: 20000,
             maximumAge: 0
         }
 
