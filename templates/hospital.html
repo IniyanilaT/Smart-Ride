@@ -100,53 +100,72 @@
         // --------------------------------
         // ENABLE PHONE NOTIFICATIONS
         // --------------------------------
-
         async function enableNotifications() {
 
-            if (!("Notification" in window)) {
+    console.log("Enable notification button clicked");
 
-                alert(
-                    "Notifications are not supported in this browser."
+    if (!("Notification" in window)) {
+        alert("❌ This browser does not support notifications.");
+        return;
+    }
+
+    try {
+
+        const permission = await Notification.requestPermission();
+
+        console.log("Notification permission:", permission);
+
+        if (permission === "granted") {
+
+            alert("✅ Notifications enabled!");
+
+            if ("serviceWorker" in navigator) {
+
+                const registration =
+                    await navigator.serviceWorker.register(
+                        "/static/service-worker.js"
+                    );
+
+                console.log(
+                    "Service worker registered:",
+                    registration
                 );
 
-                return;
+                await registration.showNotification(
+                    "🚨 SmartRide Test Alert",
+                    {
+                        body: "Phone notifications are working!",
+                        tag: "smartride-test"
+                    }
+                );
+
             }
 
+        } else if (permission === "denied") {
 
-            const permission =
-                await Notification.requestPermission();
+            alert(
+                "❌ Notifications are blocked. " +
+                "Enable notifications in your browser settings."
+            );
 
+        } else {
 
-            if (permission === "granted") {
-
-                if ("serviceWorker" in navigator) {
-
-                    try {
-
-                        await navigator.serviceWorker.register(
-                            "/static/service-worker.js"
-                        );
-
-                        console.log(
-                            "Service worker registered."
-                        );
-
-                    }
-
-                    catch (error) {
-
-                        console.error(
-                            "Service worker error:",
-                            error
-                        );
-
-                    }
-
-                }
-
-            }
+            alert("⚠️ Notification permission was not granted.");
 
         }
+
+    } catch (error) {
+
+        console.error("Notification error:", error);
+
+        alert(
+            "❌ Notification error:\n" +
+            error.message
+        );
+    }
+}
+
+ 
 
 
         // --------------------------------
