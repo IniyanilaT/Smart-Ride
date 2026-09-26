@@ -202,17 +202,32 @@
                                 await navigator.serviceWorker.ready;
 
 
-                            await registration.showNotification(
-                                "🚨 SmartRide Emergency Alert",
-                                {
-                                    body:
-                                        "Accident detected!\n" +
-                                        "Emergency response required.",
+                            try {
 
-                                    tag:
-                                        "smartride-emergency"
-                                }
-                            );
+    const registration =
+        await navigator.serviceWorker.ready;
+
+    await registration.showNotification(
+        "SmartRide Emergency Alert",
+        {
+            body: "Accident detected. Emergency response required."
+        }
+    );
+
+    console.log("Notification shown successfully");
+
+} catch (error) {
+
+    console.error(
+        "showNotification failed:",
+        error
+    );
+
+    alert(
+        "Notification failed: " +
+        error.message
+    );
+}
 
                         }
 
