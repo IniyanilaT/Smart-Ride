@@ -76,11 +76,11 @@
     </p>
 
     <div id="hospitalMap"></div>
-
+   
 
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 
-
+    let emergencyNotificationSent = false;
     <script>
 
         let hospitalMap = null;
@@ -111,129 +111,161 @@ async function enableNotifications() {
 
 }
 
-        async function getEmergencyLocation() {
+      async function getEmergencyLocation() {
 
-            try {
+    try {
 
-                const response =
-                    await fetch("/hospital-location");
+        // --------------------------------
+        // STEP 1: CHECK EMERGENCY STATUS
+        // --------------------------------
 
-                const data =
-                    await response.json();
+        const response =
+            await fetch("/hospital-location");
 
-
-                if (data.status === "EMERGENCY") {
-
-                    document.getElementById("status").innerText =
-                        "🚨 EMERGENCY RECEIVED";
-                    
-                    if (
-    Notification.permission === "granted" &&
-    emergencyNotificationSent === false
-) {
-
-    new Notification(
-        "🚨 SmartRide Emergency Alert",
-        {
-            body:
-                "Accident detected!\n" +
-                "Rider location: " +
-                data.latitude.toFixed(6) +
-                ", " +
-                data.longitude.toFixed(6)
-        }
-    );
-
-    emergencyNotificationSent = true;
-}    
+        const data =
+            await response.json();
 
 
-                    document.getElementById("emergencyTime").innerText =
-                        "Emergency received at: " +
-                        new Date().toLocaleTimeString();
+        if (data.status === "EMERGENCY") {
 
 
-                    document.getElementById("location").innerText =
-                        "Rider Location: " +
-                        data.latitude.toFixed(6) +
-                        ", " +
-                        data.longitude.toFixed(6);
+            // --------------------------------
+            // STEP 2: SEND PHONE NOTIFICATION FIRST
+            // --------------------------------
 
+            if (
+                Notification.permission === "granted" &&
+                emergencyNotificationSent === false
+            ) {
 
-                    // Start escalation only once
-
-                    startHospitalEscalation();
-
-
-                    const latitude = data.latitude;
-
-                    const longitude = data.longitude;
-
-
-                    // Create map
-
-                    if (hospitalMap === null) {
-
-                        hospitalMap =
-                            L.map("hospitalMap").setView(
-                                [latitude, longitude],
-                                15
-                            );
-
-
-                        L.tileLayer(
-                            "https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png",
-                            {
-                                attribution:
-                                    "&copy; OpenStreetMap contributors"
-                            }
-                        ).addTo(hospitalMap);
-
-
-                        riderMarker =
-                            L.marker(
-                                [latitude, longitude]
-                            ).addTo(hospitalMap);
-
-
-                        riderMarker
-                            .bindPopup("🚨 Rider Location")
-                            .openPopup();
-
+                new Notification(
+                    "🚨 SmartRide Emergency Alert",
+                    {
+                        body:
+                            "Accident detected!\n" +
+                            "Emergency response required."
                     }
-
-
-                    // Update marker
-
-                    else {
-
-                        riderMarker.setLatLng(
-                            [latitude, longitude]
-                        );
-
-                        hospitalMap.setView(
-                            [latitude, longitude]
-                        );
-
-                    }
-
-                }
-
-            }
-
-            catch (error) {
-
-                console.error(
-                    "Hospital Error:",
-                    error
                 );
 
-                document.getElementById("status").innerText =
-                    "Backend connection failed.";
+                emergencyNotificationSent = true;
+
+            }
+
+
+            // --------------------------------
+            // STEP 3: SHOW EMERGENCY STATUS
+            // --------------------------------
+
+            document.getElementById("status").innerText =
+                "🚨 EMERGENCY RECEIVED";
+
+
+            document.getElementById("emergencyTime").innerText =
+                "Emergency received at: " +
+                new Date().toLocaleTimeString();
+
+
+            // --------------------------------
+            // STEP 4: START HOSPITAL ESCALATION
+            // --------------------------------
+
+            startHospitalEscalation();
+
+
+            // --------------------------------
+            // STEP 5: NOW CHECK RIDER LOCATION
+            // --------------------------------
+
+            document.getElementById("location").innerText =
+                "Getting rider location...";
+
+
+            const latitude =
+                data.latitude;
+
+            const longitude =
+                data.longitude;
+
+
+            // --------------------------------
+            // STEP 6: DISPLAY RIDER LOCATION
+            // --------------------------------
+
+            document.getElementById("location").innerText =
+                "Rider Location: " +
+                latitude.toFixed(6) +
+                ", " +
+                longitude.toFixed(6);
+
+
+            // --------------------------------
+            // STEP 7: CREATE MAP
+            // --------------------------------
+
+            if (hospitalMap === null) {
+
+                hospitalMap =
+                    L.map("hospitalMap").setView(
+                        [latitude, longitude],
+                        15
+                    );
+
+
+                L.tileLayer(
+                    "https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png",
+                    {
+                        attribution:
+                            "&copy; OpenStreetMap contributors"
+                    }
+                ).addTo(hospitalMap);
+
+
+                riderMarker =
+                    L.marker(
+                        [latitude, longitude]
+                    ).addTo(hospitalMap);
+
+
+                riderMarker
+                    .bindPopup("🚨 Rider Location")
+                    .openPopup();
+
+            }
+
+
+            // --------------------------------
+            // STEP 8: UPDATE MAP
+            // --------------------------------
+
+            else {
+
+                riderMarker.setLatLng(
+                    [latitude, longitude]
+                );
+
+                hospitalMap.setView(
+                    [latitude, longitude]
+                );
 
             }
 
         }
+
+    }
+
+    catch (error) {
+
+        console.error(
+            "Hospital Error:",
+            error
+        );
+
+        document.getElementById("status").innerText =
+            "Backend connection failed.";
+
+    }
+
+}
         
 
         function startHospitalEscalation() {
