@@ -52,9 +52,10 @@
 
     <p id="escalationTimer"></p>
 
-    <button onclick="alert('Button is working'); enableNotifications();">
-    🔔 Enable Phone Notifications
-</button>
+
+    <button onclick="enableNotifications()">
+        🔔 Enable Phone Notifications
+    </button>
 
 
     <button id="acceptButton"
@@ -76,11 +77,11 @@
     </p>
 
     <div id="hospitalMap"></div>
-   
+
 
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 
-    let emergencyNotificationSent = false;
+
     <script>
 
         let hospitalMap = null;
@@ -92,181 +93,275 @@
         let escalationSeconds = 10;
 
         let escalationTimer = null;
+
         let emergencyNotificationSent = false;
 
-async function enableNotifications() {
-
-    if (!("Notification" in window)) {
-        alert("Notifications are not supported in this browser.");
-        return;
-    }
-
-    alert("Current notification permission: " + Notification.permission);
-
-    const permission = await Notification.requestPermission();
-    
-
-
-    alert("New notification permission: " + permission);
-
-}
-
-      async function getEmergencyLocation() {
-
-    try {
 
         // --------------------------------
-        // STEP 1: CHECK EMERGENCY STATUS
+        // ENABLE PHONE NOTIFICATIONS
         // --------------------------------
 
-        const response =
-            await fetch("/hospital-location");
+        async function enableNotifications() {
 
-        const data =
-            await response.json();
+            if (!("Notification" in window)) {
 
-
-        if (data.status === "EMERGENCY") {
-
-
-            // --------------------------------
-            // STEP 2: SEND PHONE NOTIFICATION FIRST
-            // --------------------------------
-
-            if (
-                Notification.permission === "granted" &&
-                emergencyNotificationSent === false
-            ) {
-
-                new Notification(
-                    "🚨 SmartRide Emergency Alert",
-                    {
-                        body:
-                            "Accident detected!\n" +
-                            "Emergency response required."
-                    }
+                alert(
+                    "Notifications are not supported in this browser."
                 );
 
-                emergencyNotificationSent = true;
-
+                return;
             }
 
 
-            // --------------------------------
-            // STEP 3: SHOW EMERGENCY STATUS
-            // --------------------------------
-
-            document.getElementById("status").innerText =
-                "🚨 EMERGENCY RECEIVED";
+            const permission =
+                await Notification.requestPermission();
 
 
-            document.getElementById("emergencyTime").innerText =
-                "Emergency received at: " +
-                new Date().toLocaleTimeString();
+            if (permission === "granted") {
 
+                if ("serviceWorker" in navigator) {
 
-            // --------------------------------
-            // STEP 4: START HOSPITAL ESCALATION
-            // --------------------------------
+                    try {
 
-            startHospitalEscalation();
+                        await navigator.serviceWorker.register(
+                            "/static/service-worker.js"
+                        );
 
+                        console.log(
+                            "Service worker registered."
+                        );
 
-            // --------------------------------
-            // STEP 5: NOW CHECK RIDER LOCATION
-            // --------------------------------
-
-            document.getElementById("location").innerText =
-                "Getting rider location...";
-
-
-            const latitude =
-                data.latitude;
-
-            const longitude =
-                data.longitude;
-
-
-            // --------------------------------
-            // STEP 6: DISPLAY RIDER LOCATION
-            // --------------------------------
-
-            document.getElementById("location").innerText =
-                "Rider Location: " +
-                latitude.toFixed(6) +
-                ", " +
-                longitude.toFixed(6);
-
-
-            // --------------------------------
-            // STEP 7: CREATE MAP
-            // --------------------------------
-
-            if (hospitalMap === null) {
-
-                hospitalMap =
-                    L.map("hospitalMap").setView(
-                        [latitude, longitude],
-                        15
-                    );
-
-
-                L.tileLayer(
-                    "https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png",
-                    {
-                        attribution:
-                            "&copy; OpenStreetMap contributors"
                     }
-                ).addTo(hospitalMap);
 
+                    catch (error) {
 
-                riderMarker =
-                    L.marker(
-                        [latitude, longitude]
-                    ).addTo(hospitalMap);
+                        console.error(
+                            "Service worker error:",
+                            error
+                        );
 
+                    }
 
-                riderMarker
-                    .bindPopup("🚨 Rider Location")
-                    .openPopup();
-
-            }
-
-
-            // --------------------------------
-            // STEP 8: UPDATE MAP
-            // --------------------------------
-
-            else {
-
-                riderMarker.setLatLng(
-                    [latitude, longitude]
-                );
-
-                hospitalMap.setView(
-                    [latitude, longitude]
-                );
+                }
 
             }
 
         }
 
-    }
 
-    catch (error) {
+        // --------------------------------
+        // GET EMERGENCY LOCATION
+        // --------------------------------
 
-        console.error(
-            "Hospital Error:",
-            error
-        );
+        async function getEmergencyLocation() {
 
-        document.getElementById("status").innerText =
-            "Backend connection failed.";
+            try {
 
-    }
+                const response =
+                    await fetch("/hospital-location");
 
-}
-        
+
+                const data =
+                    await response.json();
+
+
+                if (data.status === "EMERGENCY") {
+
+
+                    // --------------------------------
+                    // 1. SEND NOTIFICATION FIRST
+                    // --------------------------------
+
+                    if (
+                        Notification.permission === "granted" &&
+                        emergencyNotificationSent === false
+                    ) {
+
+                        if ("serviceWorker" in navigator) {
+
+                            const registration =
+                                await navigator.serviceWorker.ready;
+
+
+                            await registration.showNotification(
+                                "🚨 SmartRide Emergency Alert",
+                                {
+                                    body:
+                                        "Accident detected!\n" +
+                                        "Emergency response required.",
+
+                                    tag:
+                                        "smartride-emergency"
+                                }
+                            );
+
+                        }
+
+                        else {
+
+                            alert(
+                                "🚨 SmartRide Emergency Alert"
+                            );
+
+                        }
+
+
+                        emergencyNotificationSent = true;
+
+                    }
+
+
+                    // --------------------------------
+                    // 2. SHOW EMERGENCY STATUS
+                    // --------------------------------
+
+                    document.getElementById(
+                        "status"
+                    ).innerText =
+                        "🚨 EMERGENCY RECEIVED";
+
+
+                    document.getElementById(
+                        "emergencyTime"
+                    ).innerText =
+                        "Emergency received at: " +
+                        new Date().toLocaleTimeString();
+
+
+                    // --------------------------------
+                    // 3. START HOSPITAL ESCALATION
+                    // --------------------------------
+
+                    startHospitalEscalation();
+
+
+                    // --------------------------------
+                    // 4. NOW GET RIDER LOCATION
+                    // --------------------------------
+
+                    document.getElementById(
+                        "location"
+                    ).innerText =
+                        "Getting rider location...";
+
+
+                    const latitude =
+                        Number(data.latitude);
+
+
+                    const longitude =
+                        Number(data.longitude);
+
+
+                    // --------------------------------
+                    // 5. DISPLAY LOCATION
+                    // --------------------------------
+
+                    document.getElementById(
+                        "location"
+                    ).innerText =
+                        "Rider Location: " +
+                        latitude.toFixed(6) +
+                        ", " +
+                        longitude.toFixed(6);
+
+
+                    // --------------------------------
+                    // 6. CREATE MAP
+                    // --------------------------------
+
+                    if (hospitalMap === null) {
+
+                        hospitalMap =
+                            L.map(
+                                "hospitalMap"
+                            ).setView(
+                                [
+                                    latitude,
+                                    longitude
+                                ],
+                                15
+                            );
+
+
+                        L.tileLayer(
+                            "https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png",
+                            {
+                                attribution:
+                                    "&copy; OpenStreetMap contributors"
+                            }
+                        ).addTo(
+                            hospitalMap
+                        );
+
+
+                        riderMarker =
+                            L.marker(
+                                [
+                                    latitude,
+                                    longitude
+                                ]
+                            ).addTo(
+                                hospitalMap
+                            );
+
+
+                        riderMarker
+                            .bindPopup(
+                                "🚨 Rider Location"
+                            )
+                            .openPopup();
+
+                    }
+
+
+                    // --------------------------------
+                    // 7. UPDATE EXISTING MAP
+                    // --------------------------------
+
+                    else {
+
+                        riderMarker.setLatLng(
+                            [
+                                latitude,
+                                longitude
+                            ]
+                        );
+
+
+                        hospitalMap.setView(
+                            [
+                                latitude,
+                                longitude
+                            ]
+                        );
+
+                    }
+
+                }
+
+            }
+
+            catch (error) {
+
+                console.error(
+                    "Hospital Error:",
+                    error
+                );
+
+                document.getElementById(
+                    "status"
+                ).innerText =
+                    "Hospital page error. Check console.";
+
+            }
+
+        }
+
+
+        // --------------------------------
+        // HOSPITAL ESCALATION
+        // --------------------------------
 
         function startHospitalEscalation() {
 
@@ -282,49 +377,66 @@ async function enableNotifications() {
             escalationSeconds = 10;
 
 
-            document.getElementById("escalationStatus").innerText =
+            document.getElementById(
+                "escalationStatus"
+            ).innerText =
                 "🏥 Hospital 1 notified. Waiting for response...";
 
 
-            document.getElementById("escalationTimer").innerText =
+            document.getElementById(
+                "escalationTimer"
+            ).innerText =
                 "Escalating in " +
                 escalationSeconds +
                 " seconds";
 
 
             escalationTimer =
-                setInterval(function () {
+                setInterval(
+                    function () {
 
-                    escalationSeconds--;
-
-
-                    document.getElementById("escalationTimer").innerText =
-                        "Escalating in " +
-                        escalationSeconds +
-                        " seconds";
+                        escalationSeconds--;
 
 
-                    if (escalationSeconds <= 0) {
-
-                        clearInterval(
-                            escalationTimer
-                        );
-
-
-                        document.getElementById("escalationStatus").innerText =
-                            "⚠️ No response from Hospital 1. Escalating to Hospital 2.";
+                        document.getElementById(
+                            "escalationTimer"
+                        ).innerText =
+                            "Escalating in " +
+                            escalationSeconds +
+                            " seconds";
 
 
-                        document.getElementById("escalationTimer").innerText =
-                            "🏥 Hospital 2 notified.";
+                        if (
+                            escalationSeconds <= 0
+                        ) {
+
+                            clearInterval(
+                                escalationTimer
+                            );
 
 
-                        document.getElementById("hospital2Button").style.display =
-                            "inline-block";
+                            document.getElementById(
+                                "escalationStatus"
+                            ).innerText =
+                                "⚠️ No response from Hospital 1. Escalating to Hospital 2.";
 
-                    }
 
-                }, 1000);
+                            document.getElementById(
+                                "escalationTimer"
+                            ).innerText =
+                                "🏥 Hospital 2 notified.";
+
+
+                            document.getElementById(
+                                "hospital2Button"
+                            ).style.display =
+                                "inline-block";
+
+                        }
+
+                    },
+                    1000
+                );
 
         }
 
@@ -340,15 +452,21 @@ async function enableNotifications() {
             );
 
 
-            document.getElementById("escalationStatus").innerText =
+            document.getElementById(
+                "escalationStatus"
+            ).innerText =
                 "✅ Hospital 1 accepted the emergency.";
 
 
-            document.getElementById("escalationTimer").innerText =
+            document.getElementById(
+                "escalationTimer"
+            ).innerText =
                 "Emergency response confirmed.";
 
 
-            document.getElementById("acceptButton").disabled =
+            document.getElementById(
+                "acceptButton"
+            ).disabled =
                 true;
 
         }
@@ -365,22 +483,28 @@ async function enableNotifications() {
             );
 
 
-            document.getElementById("escalationStatus").innerText =
+            document.getElementById(
+                "escalationStatus"
+            ).innerText =
                 "✅ Hospital 2 accepted the emergency.";
 
 
-            document.getElementById("escalationTimer").innerText =
+            document.getElementById(
+                "escalationTimer"
+            ).innerText =
                 "Emergency response confirmed.";
 
 
-            document.getElementById("hospital2Button").disabled =
+            document.getElementById(
+                "hospital2Button"
+            ).disabled =
                 true;
 
         }
 
 
         // --------------------------------
-        // START MONITORING HOSPITAL
+        // START HOSPITAL MONITORING
         // --------------------------------
 
         enableNotifications();
