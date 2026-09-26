@@ -52,6 +52,10 @@
 
     <p id="escalationTimer"></p>
 
+    <button onclick="alert('Button is working'); enableNotifications();">
+    🔔 Enable Phone Notifications
+</button>
+
 
     <button id="acceptButton"
             onclick="hospitalAccept()">
@@ -88,11 +92,24 @@
         let escalationSeconds = 10;
 
         let escalationTimer = null;
+        let emergencyNotificationSent = false;
+
+async function enableNotifications() {
+
+    if (!("Notification" in window)) {
+        alert("Notifications are not supported in this browser.");
+        return;
+    }
+
+    alert("Current notification permission: " + Notification.permission);
+
+    const permission = await Notification.requestPermission();
+    
 
 
-        // --------------------------------
-        // GET RIDER LOCATION
-        // --------------------------------
+    alert("New notification permission: " + permission);
+
+}
 
         async function getEmergencyLocation() {
 
@@ -109,6 +126,26 @@
 
                     document.getElementById("status").innerText =
                         "🚨 EMERGENCY RECEIVED";
+                    
+                    if (
+    Notification.permission === "granted" &&
+    emergencyNotificationSent === false
+) {
+
+    new Notification(
+        "🚨 SmartRide Emergency Alert",
+        {
+            body:
+                "Accident detected!\n" +
+                "Rider location: " +
+                data.latitude.toFixed(6) +
+                ", " +
+                data.longitude.toFixed(6)
+        }
+    );
+
+    emergencyNotificationSent = true;
+}    
 
 
                     document.getElementById("emergencyTime").innerText =
@@ -197,11 +234,7 @@
             }
 
         }
-
-
-        // --------------------------------
-        // HOSPITAL ESCALATION
-        // --------------------------------
+        
 
         function startHospitalEscalation() {
 
@@ -317,6 +350,8 @@
         // --------------------------------
         // START MONITORING HOSPITAL
         // --------------------------------
+
+        enableNotifications();
 
         getEmergencyLocation();
 
